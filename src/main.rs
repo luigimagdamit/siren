@@ -8,17 +8,24 @@ use rodio::{Decoder, OutputStream, Sink};
 use std::{fs::File, io::BufReader, sync::{Arc, Mutex}, thread, time::Duration};
 use std::fs;
 
-use std::{sync::{atomic::{AtomicBool, Ordering}}};
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 fn init_radio_test(filename: &str) {
     // Create an output stream and a stream handle
     let r  = Radio::new();
     let song_name = String::from(filename);
     let song_path = String::from(filename);
     let song = Song::new(&song_name, &song_path);
-    if let Ok(mut radio) = r {
-        let _ = &radio.queue_song(song);
-        let _ = radio.change_song(0);
+    
+    match r {
+        Ok(mut radio) => {
+            
+            let _ = &radio.queue_song(song);
+            let _ = radio.change_song(0);
+        }
+        Err(_) => panic!()
     }
+
 }
 fn get_files() -> Vec<String> {
     let paths = fs::read_dir("./music").unwrap();
@@ -120,19 +127,68 @@ fn delete_name(s: &mut Cursive) {
         }
     }
 }
+
+enum Command {
+    Play,
+    Stop
+}
+fn spawn(path: &str) -> Sender<Command> {
+    let (tx, rx) = mpsc::channel();
+    let p = String::from(path);
+    thread::spawn(move || {
+        play(&rx, p);
+    });
+    tx
+}
+fn play(rx: &Receiver<Command>, path: String) {
+    let r  = Radio::new();
+    let song = Song::new(&path, &path);
+    
+    match r {
+        Ok(mut radio) => {
+            loop {
+
+                if let Ok(cmd) = rx.try_recv() {
+                    match cmd {
+                        Command::Play => {
+                            println!("playing");
+                            let song = Song::new(&path, &path);
+                            let _ = &radio.queue_song(song);
+                            let _ = radio.change_song(0);
+                        },
+                        Command::Stop => {
+                            // if let Some(sink) = &radio.metadata.sink {
+                            //     sink.pause();
+                            // }
+                            break;
+
+
+                        }
+                    }
+                }
+                thread::sleep(Duration::from_millis(100));
+            }
+            
+        }
+        Err(_) => panic!()
+    }
+}
 fn on_submit(s: &mut Cursive, name: &str) {
     // s.pop_layer();
 
-
-
-    let new_str = String::from(name);
-    let handle = std::thread::spawn(move || {
-        init_radio_test(&new_str);
-    });
+    let tx = spawn(name);
+    let a = tx.send(Command::Play);
+    
+    // let new_str = String::from(name);
+    // let handle = std::thread::spawn(move || {
+    //     init_radio_test(&new_str);
+    // });
+    let tx_quit = tx.clone();
 
     s.add_layer(Dialog::text(format!("Playing: {}", name))
         .title(format!("{}", name))
-        .button("Quit", |s| {
+        .button("Quit", move |s| {
+            let _ = tx_quit.send(Command::Stop);
             s.pop_layer();
         })
     );

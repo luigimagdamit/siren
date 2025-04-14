@@ -68,7 +68,7 @@ impl <'a> Radio <'a> {
             let source = Radio::create_source(song.path);
             if let Some(sink) = &self.metadata.sink {
                 sink.append(source?);
-                sink.sleep_until_end();
+
             }
             Ok(())
         } else {
