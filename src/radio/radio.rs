@@ -1,4 +1,4 @@
-use std::{fmt::Error, fs::File};
+use std::{fmt::Error, fs::File, thread};
 use std::io::BufReader;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, PlayError, Sink, StreamError};
 
@@ -38,8 +38,9 @@ impl RadioMeta {
         }
     }
 }
+
 pub struct Radio <'a> {
-    metadata: RadioMeta,
+    pub metadata: RadioMeta,
     songs: Vec<Song<'a>> // should hold the song names. promise that the string will have lifetime or shorter than a
 }
 
@@ -75,7 +76,7 @@ impl <'a> Radio <'a> {
         }
         
     }
-    fn create_source(path: &'a str) -> Result<Decoder<BufReader<File>>, RadioError> {
+    pub fn create_source(path: &'a str) -> Result<Decoder<BufReader<File>>, RadioError> {
         let file = File::open(path);
         if let Ok(file_success) = file {
             let source = Decoder::new(BufReader::new(file_success)).unwrap();
@@ -86,8 +87,8 @@ impl <'a> Radio <'a> {
     }
 }
 pub struct Song <'a> {
-    name: &'a str,
-    path: &'a str,
+    pub name: &'a str,
+    pub path: &'a str,
 
     
 }
