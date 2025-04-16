@@ -4,7 +4,7 @@ use crate::radio::view::UserInterface;
 use std::env;
 
 
-use crate::radio::files::{get_name, create_table};
+use crate::radio::files::create_table;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
