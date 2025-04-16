@@ -1,14 +1,33 @@
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::mpsc;
 
-use cursive::{Cursive, CursiveRunnable};
-use cursive::views::{Button, Dialog};
+use cursive::Cursive;
+use cursive::views::Dialog;
 use std::{thread, time::Duration};
 use crate::radio::radio::{Radio, Song};
 enum Command {
     Play,
     Stop
 }
+
+/// creates a process for audio playback
+/// then creates a popup that will stop the process
+/// when it quits out
+pub fn on_submit(s: &mut Cursive, name: &str) {
+    let tx = spawn(name);
+    let _ = tx.send(Command::Play);
+    
+    let tx_quit = tx.clone();
+
+    s.add_layer(Dialog::text(format!("Playing: \"{}\"", name))
+        .title(name.to_string())
+        .button("Quit", move |s| {
+            let _ = tx_quit.send(Command::Stop);
+            s.pop_layer();
+        })
+    );
+}
+
 fn spawn(path: &str) -> Sender<Command> {
     let (tx, rx) = mpsc::channel();
     let p = String::from(path);
@@ -17,6 +36,7 @@ fn spawn(path: &str) -> Sender<Command> {
     });
     tx
 }
+
 fn play(rx: &Receiver<Command>, path: String) {
     let r  = Radio::new();
     match r {
@@ -30,6 +50,7 @@ fn play(rx: &Receiver<Command>, path: String) {
                             let _ = radio.change_song(0);
                         },
                         Command::Stop => {
+                            let _ = &radio.stop_song();
                             break;
                         }
                     }
@@ -40,18 +61,4 @@ fn play(rx: &Receiver<Command>, path: String) {
         }
         Err(_) => panic!()
     }
-}
-pub fn on_submit(s: &mut Cursive, name: &str) {
-    let tx = spawn(name);
-    let _ = tx.send(Command::Play);
-    
-    let tx_quit = tx.clone();
-
-    s.add_layer(Dialog::text(format!("Playing: {}", name))
-        .title(format!("{}", name))
-        .button("Quit", move |s| {
-            let _ = tx_quit.send(Command::Stop);
-            s.pop_layer();
-        })
-    );
 }

@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::BufReader;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 
-
 pub struct RadioMeta {
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
@@ -44,6 +43,7 @@ pub struct Radio <'a> {
     songs: Vec<Song<'a>> // should hold the song names. promise that the string will have lifetime or shorter than a
 }
 
+#[warn(dead_code)]
 pub enum RadioError {
     IndexNotFound,
     InitFailure,
@@ -71,6 +71,12 @@ impl <'a> Radio <'a> {
             }
             Ok(())
         } else { Err(RadioError::IndexNotFound) }
+        
+    }
+    pub fn stop_song(&self)  {
+        if let Some(sink) = &self.metadata.sink {
+            sink.stop();
+        }
         
     }
     pub fn create_source(path: &'a str) -> Result<Decoder<BufReader<File>>, RadioError> {
