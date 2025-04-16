@@ -1,6 +1,6 @@
-use std::{fmt::Error, fs::File, thread};
+use std::fs::File;
 use std::io::BufReader;
-use rodio::{Decoder, OutputStream, OutputStreamHandle, PlayError, Sink, StreamError};
+use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 
 
 pub struct RadioMeta {
@@ -53,7 +53,6 @@ impl <'a> Radio <'a> {
     pub fn new() -> Result<Radio<'a> , RadioMetaError> {
         let mut metadata = RadioMeta::new()?;
         metadata.init_sink()?;
-
         Ok(Radio {
             metadata,
             songs: Vec::new()
@@ -67,13 +66,11 @@ impl <'a> Radio <'a> {
         if let Some(song) = self.songs.get(index) {
             let source = Radio::create_source(song.path);
             if let Some(sink) = &self.metadata.sink {
+                if !sink.empty() { sink.stop(); }
                 sink.append(source?);
-
             }
             Ok(())
-        } else {
-            Err(RadioError::IndexNotFound)
-        }
+        } else { Err(RadioError::IndexNotFound) }
         
     }
     pub fn create_source(path: &'a str) -> Result<Decoder<BufReader<File>>, RadioError> {
