@@ -13,16 +13,17 @@ enum Command {
 /// creates a process for audio playback
 /// then creates a popup that will stop the process
 /// when it quits out
+/// Tx = transmitter
 pub fn on_submit(s: &mut Cursive, name: &str) {
     let tx = spawn(name);
     let _ = tx.send(Command::Play);
     
-    let tx_quit = tx.clone();
-
-    s.add_layer(Dialog::text(format!("Playing: \"{}\"", name))
+    s.add_layer(
+        Dialog::text(format!("Playing: \"{}\"", name)
+    )
         .title(name.to_string())
         .button("Quit", move |s| {
-            let _ = tx_quit.send(Command::Stop);
+            let _ = tx.send(Command::Stop);
             s.pop_layer();
         })
     );
@@ -57,7 +58,6 @@ fn play(rx: &Receiver<Command>, path: String) {
                 }
                 thread::sleep(Duration::from_millis(100));
             }
-            
         }
         Err(_) => panic!()
     }
