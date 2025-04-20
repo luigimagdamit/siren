@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
+use cursive::view::IntoBoxedView;
 use cursive::{Cursive, CursiveRunnable};
 use cursive::views::{Dialog, DummyView, LinearLayout, NamedView, ResizedView, SelectView};
 use cursive::traits::*;
 use cursive::theme::Theme;
 use crate::radio::theme::InterfaceTheme;
 use crate::radio::control::on_submit;
-
+use crate::radio::radio::Song;
 
 struct VersionMenu {
     view: SelectView
@@ -36,24 +37,35 @@ impl VersionMenu {
                     .add_items(versions.to_vec())
                     .into_resized_view("Title", (100, 5))
     }
-    fn add_version_menu(s: &mut Cursive, name: &str, table: &HashMap<String, Vec<String>>) {
+    fn add_version_menu(s: &mut Cursive, name: &str, table: &HashMap<String, Vec<Song>>) {
     
-        let versions = table.get(name).unwrap();
-        let menu_layout = Dialog::around(LinearLayout::horizontal()
-                    .child(VersionMenu::build(versions))
-                    .child(DummyView))
-                    .title("Versions")
-                    .button("Back", |s| {
-                    s.pop_layer();
-        });
-        s.add_layer(menu_layout);
+        let mut versions = Vec::new();
+        let song_list = table.get(name);
+
+        match song_list {
+            Some(song_list) => {
+                for song in song_list {
+                    versions.push(song.path.clone());
+                }
+                let menu_layout = Dialog::around(LinearLayout::horizontal()
+                        .child(VersionMenu::build(&versions))
+                        .child(DummyView))
+                        .title("Versions")
+                        .button("Back", |s| {
+                            s.pop_layer();
+                        });
+                    s.add_layer(menu_layout);
+            },
+            None => panic!()
+        }
+        
     }
 
 }
 pub struct UserInterface<'a> {
     siv: CursiveRunnable,
     dir: &'a str,
-    table: HashMap<String, Vec<String>>
+    table: HashMap<String, Vec<Song>>
 }
 impl<'a>UserInterface <'a>{
     pub fn init() -> Self {
@@ -66,7 +78,7 @@ impl<'a>UserInterface <'a>{
     pub fn set_dir(&mut self, dir: &'a str) {
         self.dir = dir;
     }
-    pub fn set_table(&mut self, table: HashMap<String, Vec<String>>) {
+    pub fn set_table(&mut self, table: HashMap<String, Vec<Song>>) {
         self.table = table;
     }
     pub fn run(&mut self) {
@@ -76,7 +88,7 @@ impl<'a>UserInterface <'a>{
     }
 
     fn build_view(&mut self) {
-        let menu = self.build_song_menu();
+        let menu = wrap_dialogue(self.create_song_menu());
         self.siv.add_layer(menu);
         for (name, _) in &self.table {
             self.siv.call_on_name("select", |v: &mut SelectView<String>| {
@@ -85,7 +97,7 @@ impl<'a>UserInterface <'a>{
         );}
     }
 
-    fn song_menu(&mut self) -> ResizedView<NamedView<SelectView>> {
+    fn create_song_menu(&mut self) -> ResizedView<NamedView<SelectView>> {
         let table = self.table.clone();
         SelectView::<String>::new()
             .on_submit(move |s, name: &str| {
@@ -94,15 +106,7 @@ impl<'a>UserInterface <'a>{
             .with_name("select")
             .fixed_size((100, 5))
     }
-    fn build_song_menu(&mut self) -> Dialog {
-        Dialog::around(LinearLayout::horizontal()
-            .child(self.song_menu())
-            .child(DummyView))
-            .title("Songs")
-            .button("Exit", |s| {
-                s.quit();
-            })
-    }
+
 
 
     fn set_theme(&mut self, theme: Theme) {
@@ -113,4 +117,12 @@ impl<'a>UserInterface <'a>{
 
 
 
-
+fn wrap_dialogue<V: IntoBoxedView + 'static>(view: V) -> Dialog {
+    Dialog::around(LinearLayout::horizontal()
+    .child(view)
+    .child(DummyView))
+    .title("Songs")
+    .button("Exit", |s| {
+        s.quit();
+    })
+}

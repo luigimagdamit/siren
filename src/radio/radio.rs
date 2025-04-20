@@ -38,9 +38,9 @@ impl RadioMeta {
     }
 }
 
-pub struct Radio <'a> {
+pub struct Radio  {
     pub metadata: RadioMeta,
-    songs: Vec<Song<'a>> // should hold the song names. promise that the string will have lifetime or shorter than a
+    songs: Vec<Song> // should hold the song names. promise that the string will have lifetime or shorter than a
 }
 
 #[warn(dead_code)]
@@ -49,8 +49,8 @@ pub enum RadioError {
     InitFailure,
     SourceFailure
 }
-impl <'a> Radio <'a> {
-    pub fn new() -> Result<Radio<'a> , RadioMetaError> {
+impl <'a> Radio  {
+    pub fn new() -> Result<Radio, RadioMetaError> {
         let mut metadata = RadioMeta::new()?;
         metadata.init_sink()?;
         Ok(Radio {
@@ -58,13 +58,13 @@ impl <'a> Radio <'a> {
             songs: Vec::new()
         })
     }
-    pub fn queue_song(&mut self, song: Song<'a>) {
+    pub fn queue_song(&mut self, song: Song) {
         self.songs.push(song);
     }
     
     pub fn change_song(&self, index: usize) -> Result<(), RadioError> {
         if let Some(song) = self.songs.get(index) {
-            let source = Radio::create_source(song.path);
+            let source = Radio::create_source(&song.path);
             if let Some(sink) = &self.metadata.sink {
                 if !sink.empty() { sink.stop(); }
                 sink.append(source?);
@@ -89,20 +89,22 @@ impl <'a> Radio <'a> {
         
     }
 }
-pub struct Song <'a> {
-    pub name: &'a str,
-    pub path: &'a str,
+#[derive(Clone)]
+pub struct Song  {
+    pub name: String,
+    pub path: String,
 
     
 }
-impl <'a> Song <'a> {
-    pub fn new(name: &'a str, path: &'a str) -> Song <'a> {
+
+impl Song  {
+    pub fn new(name: String, path: String) -> Song  {
         Song {name, path }
     }
-    pub fn change_name(&mut self, new_name: &'a str) {
+    pub fn change_name(&mut self, new_name: String) {
         self.name = new_name;
     }
-    pub fn change_path(&mut self, new_path: &'a str) {
+    pub fn change_path(&mut self, new_path: String) {
         self.path = new_path;
     }
 

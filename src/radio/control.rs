@@ -46,7 +46,8 @@ fn play(rx: &Receiver<Command>, path: String) {
                 if let Ok(cmd) = rx.try_recv() {
                     match cmd {
                         Command::Play => {
-                            let song = Song::new(&path, &path);
+
+                            let song = Song::new(path.clone(), path.clone());
                             let _ = &radio.queue_song(song);
                             let _ = radio.change_song(0);
                         },

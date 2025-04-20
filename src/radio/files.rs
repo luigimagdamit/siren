@@ -1,7 +1,7 @@
 use std::fs;
 use std::collections::HashMap;
 use crate::radio::radio::Song;
-pub fn  create_table(path: &str) -> HashMap<String, Vec<String>> {
+pub fn  create_table(path: &str) -> HashMap<String, Vec<Song>> {
     let mut table = HashMap::new();
     
     let paths = fs::read_dir(path).unwrap();
@@ -14,9 +14,15 @@ pub fn  create_table(path: &str) -> HashMap<String, Vec<String>> {
                 .display()
                 .to_string();
             let name = get_name(&path);
-                
+
+            let entry = Song {
+                name: String::from(name),
+                path: path.clone()
+            };
+
             let path_list = table.entry(name.to_string()).or_insert(Vec::new());
-            path_list.push(path);
+            
+            path_list.push(entry);
 
         }
     }
